@@ -1,0 +1,366 @@
+{
+  "title": "Средняя оценка МФЦ по регионам",
+  "years": [
+    {
+      "year": 2026,
+      "regions": [
+        {
+          "regionCode": "RU-AD",
+          "value": 4.09
+        },
+        {
+          "regionCode": "RU-AL",
+          "value": 3.85
+        },
+        {
+          "regionCode": "RU-ALT",
+          "value": 4.06
+        },
+        {
+          "regionCode": "RU-AMU",
+          "value": 4.08
+        },
+        {
+          "regionCode": "RU-ARK",
+          "value": 4.09
+        },
+        {
+          "regionCode": "RU-AST",
+          "value": 3.8
+        },
+        {
+          "regionCode": "RU-BA",
+          "value": 3.88
+        },
+        {
+          "regionCode": "RU-BEL",
+          "value": 3.88
+        },
+        {
+          "regionCode": "RU-BRY",
+          "value": 3.96
+        },
+        {
+          "regionCode": "RU-BU",
+          "value": 3.81
+        },
+        {
+          "regionCode": "RU-CE",
+          "value": 4.04
+        },
+        {
+          "regionCode": "RU-CHE",
+          "value": 4.02
+        },
+        {
+          "regionCode": "RU-CHU",
+          "value": 4.05
+        },
+        {
+          "regionCode": "RU-CR",
+          "value": 3.77
+        },
+        {
+          "regionCode": "RU-CU",
+          "value": 4.34
+        },
+        {
+          "regionCode": "RU-DA",
+          "value": 4.3
+        },
+        {
+          "regionCode": "RU-DON",
+          "value": 4.01
+        },
+        {
+          "regionCode": "RU-HR",
+          "value": 3.1
+        },
+        {
+          "regionCode": "RU-IN",
+          "value": 4.03
+        },
+        {
+          "regionCode": "RU-IRK",
+          "value": 4.08
+        },
+        {
+          "regionCode": "RU-IVA",
+          "value": 3.97
+        },
+        {
+          "regionCode": "RU-KAM",
+          "value": 4.19
+        },
+        {
+          "regionCode": "RU-KB",
+          "value": 3.95
+        },
+        {
+          "regionCode": "RU-KC",
+          "value": 4.01
+        },
+        {
+          "regionCode": "RU-KDA",
+          "value": 4.05
+        },
+        {
+          "regionCode": "RU-KEM",
+          "value": 4.03
+        },
+        {
+          "regionCode": "RU-KGD",
+          "value": 4.41
+        },
+        {
+          "regionCode": "RU-KGN",
+          "value": 4.29
+        },
+        {
+          "regionCode": "RU-KHA",
+          "value": 4.0
+        },
+        {
+          "regionCode": "RU-KHM",
+          "value": 4.43
+        },
+        {
+          "regionCode": "RU-KIR",
+          "value": 4.05
+        },
+        {
+          "regionCode": "RU-KK",
+          "value": 4.15
+        },
+        {
+          "regionCode": "RU-KL",
+          "value": 4.33
+        },
+        {
+          "regionCode": "RU-KLU",
+          "value": 4.35
+        },
+        {
+          "regionCode": "RU-KO",
+          "value": 4.06
+        },
+        {
+          "regionCode": "RU-KOS",
+          "value": 3.91
+        },
+        {
+          "regionCode": "RU-KR",
+          "value": 4.11
+        },
+        {
+          "regionCode": "RU-KRS",
+          "value": 4.41
+        },
+        {
+          "regionCode": "RU-KYA",
+          "value": 4.01
+        },
+        {
+          "regionCode": "RU-LEN",
+          "value": 4.12
+        },
+        {
+          "regionCode": "RU-LIP",
+          "value": 4.31
+        },
+        {
+          "regionCode": "RU-LUG",
+          "value": 4.07
+        },
+        {
+          "regionCode": "RU-MAG",
+          "value": 3.95
+        },
+        {
+          "regionCode": "RU-ME",
+          "value": 3.93
+        },
+        {
+          "regionCode": "RU-MO",
+          "value": 4.18
+        },
+        {
+          "regionCode": "RU-MOS",
+          "value": 4.4
+        },
+        {
+          "regionCode": "RU-MOW",
+          "value": 4.38
+        },
+        {
+          "regionCode": "RU-MUR",
+          "value": 4.46
+        },
+        {
+          "regionCode": "RU-NEN",
+          "value": 4.11
+        },
+        {
+          "regionCode": "RU-NGR",
+          "value": 4.06
+        },
+        {
+          "regionCode": "RU-NIZ",
+          "value": 4.07
+        },
+        {
+          "regionCode": "RU-NVS",
+          "value": 4.17
+        },
+        {
+          "regionCode": "RU-OMS",
+          "value": 3.93
+        },
+        {
+          "regionCode": "RU-ORE",
+          "value": 4.02
+        },
+        {
+          "regionCode": "RU-ORL",
+          "value": 4.02
+        },
+        {
+          "regionCode": "RU-PER",
+          "value": 3.94
+        },
+        {
+          "regionCode": "RU-PNZ",
+          "value": 3.91
+        },
+        {
+          "regionCode": "RU-PRI",
+          "value": 4.29
+        },
+        {
+          "regionCode": "RU-PSK",
+          "value": 4.23
+        },
+        {
+          "regionCode": "RU-ROS",
+          "value": 4.14
+        },
+        {
+          "regionCode": "RU-RYA",
+          "value": 3.96
+        },
+        {
+          "regionCode": "RU-SA",
+          "value": 4.26
+        },
+        {
+          "regionCode": "RU-SAK",
+          "value": 4.35
+        },
+        {
+          "regionCode": "RU-SAM",
+          "value": 3.99
+        },
+        {
+          "regionCode": "RU-SAR",
+          "value": 4.58
+        },
+        {
+          "regionCode": "RU-SE",
+          "value": 4.26
+        },
+        {
+          "regionCode": "RU-SEV",
+          "value": 4.61
+        },
+        {
+          "regionCode": "RU-SMO",
+          "value": 3.97
+        },
+        {
+          "regionCode": "RU-SPE",
+          "value": 4.74
+        },
+        {
+          "regionCode": "RU-STA",
+          "value": 4.17
+        },
+        {
+          "regionCode": "RU-SVE",
+          "value": 4.22
+        },
+        {
+          "regionCode": "RU-TA",
+          "value": 4.1
+        },
+        {
+          "regionCode": "RU-TAM",
+          "value": 3.97
+        },
+        {
+          "regionCode": "RU-TOM",
+          "value": 4.23
+        },
+        {
+          "regionCode": "RU-TUL",
+          "value": 4.36
+        },
+        {
+          "regionCode": "RU-TVE",
+          "value": 4.15
+        },
+        {
+          "regionCode": "RU-TY",
+          "value": 3.79
+        },
+        {
+          "regionCode": "RU-TYU",
+          "value": 4.41
+        },
+        {
+          "regionCode": "RU-UD",
+          "value": 4.19
+        },
+        {
+          "regionCode": "RU-ULY",
+          "value": 4.35
+        },
+        {
+          "regionCode": "RU-VGG",
+          "value": 4.02
+        },
+        {
+          "regionCode": "RU-VLA",
+          "value": 4.52
+        },
+        {
+          "regionCode": "RU-VLG",
+          "value": 4.05
+        },
+        {
+          "regionCode": "RU-VOR",
+          "value": 3.96
+        },
+        {
+          "regionCode": "RU-YAN",
+          "value": 4.15
+        },
+        {
+          "regionCode": "RU-YAR",
+          "value": 4.29
+        },
+        {
+          "regionCode": "RU-YEV",
+          "value": 3.73
+        },
+        {
+          "regionCode": "RU-ZAB",
+          "value": 4.15
+        },
+        {
+          "regionCode": "RU-ZP",
+          "value": 3.87
+        }
+      ]
+    }
+  ]
+}
