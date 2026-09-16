@@ -15,6 +15,9 @@
     .sort-control { display: inline-flex; align-items: center; gap: 6px; color: #374151; font-size: 0.875rem; }
     .sort-control select { padding: 7px 9px; border: 1px solid #d1d5db; background: #fff; border-radius: 6px; color: #111827; }
     .sort-control input { width: 16px; height: 16px; accent-color: #2563eb; }
+    .download-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+    .download-button { padding: 8px 12px; border: 1px solid #d1d5db; background: #fff; border-radius: 6px; color: #1d4ed8; text-decoration: none; font-size: 0.875rem; }
+    .download-button:hover { background: #eff6ff; }
     .year-nav { display: flex; align-items: center; gap: 8px; }
     .year-nav button { padding: 8px 12px; border: 1px solid #d1d5db; background: #fff; border-radius: 6px; cursor: pointer; }
     .year-nav button:hover { background: #f3f4f6; }
@@ -167,18 +170,82 @@
           return response.ok ? response.json() : Promise.reject(new Error('Не удалось загрузить ' + url));
         });
       };
+      const fetchText = function (url) {
+        return fetch(url).then(function (response) {
+          return response.ok ? response.text() : Promise.reject(new Error('Не удалось загрузить ' + url));
+        });
+      };
+      const parseCsv = function (text) {
+        const rows = [];
+        let row = [];
+        let field = '';
+        let quoted = false;
+        for (let i = 0; i < text.length; i += 1) {
+          const char = text[i];
+          if (char === '"') {
+            if (quoted && text[i + 1] === '"') {
+              field += '"';
+              i += 1;
+            } else {
+              quoted = !quoted;
+            }
+          } else if (char === ';' && !quoted) {
+            row.push(field);
+            field = '';
+          } else if ((char === '\n' || char === '\r') && !quoted) {
+            if (char === '\r' && text[i + 1] === '\n') i += 1;
+            row.push(field);
+            if (row.some(function (value) { return value !== ''; })) rows.push(row);
+            row = [];
+            field = '';
+          } else {
+            field += char;
+          }
+        }
+        row.push(field);
+        if (row.some(function (value) { return value !== ''; })) rows.push(row);
+        const headers = rows.shift() || [];
+        return rows.map(function (values) {
+          const item = {};
+          headers.forEach(function (header, index) {
+            item[header.replace(/^\uFEFF/, '')] = values[index] || '';
+          });
+          return item;
+        });
+      };
+      const parseCsvNumber = function (value) {
+        const number = Number(String(value || '').replace(',', '.').trim());
+        return Number.isFinite(number) ? number : null;
+      };
       const dataUrl = isStaticMode
-        ? './mfts_ratings_by_region.json'
+        ? './ratings_df.csv'
         : base + '/api/dashboard/' + encodeURIComponent(dashboardId);
       const regionsUrl = isStaticMode ? './regions.json' : base + '/data/regions.json';
       const coordinatesUrl = isStaticMode ? './regionCoordinates.json' : base + '/data/regionCoordinates.json';
 
       Promise.all([
-        fetchJson(dataUrl),
+        isStaticMode ? fetchText(dataUrl) : fetchJson(dataUrl),
         fetchJson(regionsUrl),
         fetchJson(coordinatesUrl)
       ]).then(function ([dashboard, regions, regionCoordinates]) {
-        const data = dashboard.payload || dashboard;
+        let data = dashboard.payload || dashboard;
+        if (isStaticMode) {
+          const csvRows = parseCsv(dashboard);
+          const regionsByCode = {};
+          csvRows.forEach(function (row) {
+            const value = parseCsvNumber(row['Рейтинг']);
+            if (row.regionCode && value !== null) regionsByCode[row.regionCode] = value;
+          });
+          data = {
+            title: 'Средняя оценка МФЦ по регионам',
+            years: [{
+              year: 2026,
+              regions: Object.keys(regionsByCode).sort().map(function (regionCode) {
+                return { regionCode: regionCode, value: regionsByCode[regionCode] };
+              })
+            }]
+          };
+        }
         if (isStaticMode && !data.title) {
           data.title = 'Средняя оценка МФЦ по регионам';
         }
@@ -408,6 +475,10 @@
                     '<option value="rating-desc"' + (districtSort === 'rating-desc' ? ' selected' : '') + '>по рейтингу: убывание</option>' +
                     '<option value="rating-asc"' + (districtSort === 'rating-asc' ? ' selected' : '') + '>по рейтингу: возрастание</option>' +
                   '</select></label>' +
+                '</div>' +
+                '<div class="download-controls">' +
+                  '<a class="download-button" href="' + (isStaticMode ? './mfts_clean.csv' : base + '/downloads/mfts_clean.csv') + '" download="mfts_clean.csv">Скачать mfts_clean</a>' +
+                  '<a class="download-button" href="' + (isStaticMode ? './ratings_df.csv' : base + '/downloads/ratings_df.csv') + '" download="ratings_df.csv">Скачать ratings_df</a>' +
                 '</div>' +
               '</div>';
 
