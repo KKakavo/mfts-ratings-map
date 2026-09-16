@@ -222,7 +222,7 @@
         return Number.isFinite(number) ? number : null;
       };
       const dataUrl = isStaticMode
-        ? './ratings_df.csv'
+        ? './ratings_df.csv?mapDataVersion=2'
         : base + '/api/dashboard/' + encodeURIComponent(dashboardId);
       const regionsUrl = isStaticMode ? './regions.json' : base + '/data/regions.json';
       const coordinatesUrl = isStaticMode ? './regionCoordinates.json' : base + '/data/regionCoordinates.json';
@@ -235,12 +235,16 @@
         let data = dashboard.payload || dashboard;
         if (isStaticMode) {
           const csvRows = parseCsv(dashboard);
-          const metricColumns = ['Рейтинг', 'complex_rating'].filter(function (column) {
-            return csvRows.some(function (row) { return parseCsvNumber(row[column]) !== null; });
+          const csvColumns = Object.keys(csvRows[0] || {});
+          const metricColumns = csvColumns.filter(function (column) {
+            return column !== 'regionCode' && csvRows.some(function (row) {
+              return parseCsvNumber(row[column]) !== null;
+            });
           });
           const metricLabels = {
             'Рейтинг': 'Рейтинг МФЦ',
-            'complex_rating': 'Комплексный рейтинг'
+            'Комплексный рейтинг': 'Комплексный рейтинг',
+            'Рейтинг со сглаживанием': 'Рейтинг со сглаживанием'
           };
           let selectedMetric = metricColumns.includes('Рейтинг') ? 'Рейтинг' : metricColumns[0];
 
