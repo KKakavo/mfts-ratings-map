@@ -7,7 +7,9 @@
   <style>
     * { box-sizing: border-box; }
     body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: #f3f4f6; }
+    body.embed-mode { background: transparent; }
     .container { max-width: 1200px; margin: 0 auto; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    body.embed-mode .container { max-width: none; min-height: 100vh; border-radius: 0; box-shadow: none; }
     h2 { margin: 0 0 8px; font-size: 1.5rem; color: #111; }
     .subtitle { color: #6b7280; margin-bottom: 16px; }
     .toolbar { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
@@ -152,6 +154,8 @@
       const base = window.location.origin;
       const isStaticMode = !dashboardId;
       const params = new URLSearchParams(window.location.search);
+      const embedMode = params.get('embed') === '1';
+      if (embedMode) document.body.classList.add('embed-mode');
       const snapshotRaw = params.get('snapshotYear');
       let isSnapshotMode = false;
       let snapshotYear = null;
@@ -231,19 +235,41 @@
         let data = dashboard.payload || dashboard;
         if (isStaticMode) {
           const csvRows = parseCsv(dashboard);
-          const regionsByCode = {};
-          csvRows.forEach(function (row) {
-            const value = parseCsvNumber(row['Рейтинг']);
-            if (row.regionCode && value !== null) regionsByCode[row.regionCode] = value;
+          const metricColumns = ['Рейтинг', 'complex_rating'].filter(function (column) {
+            return csvRows.some(function (row) { return parseCsvNumber(row[column]) !== null; });
           });
-          data = {
-            title: 'Средняя оценка МФЦ по регионам',
-            years: [{
-              year: 2026,
-              regions: Object.keys(regionsByCode).sort().map(function (regionCode) {
-                return { regionCode: regionCode, value: regionsByCode[regionCode] };
-              })
-            }]
+          const metricLabels = {
+            'Рейтинг': 'Рейтинг МФЦ',
+            'complex_rating': 'Комплексный рейтинг'
+          };
+          let selectedMetric = metricColumns.includes('Рейтинг') ? 'Рейтинг' : metricColumns[0];
+
+          function buildStaticData() {
+            const regionsByCode = {};
+            csvRows.forEach(function (row) {
+              const value = parseCsvNumber(row[selectedMetric]);
+              if (row.regionCode && value !== null) regionsByCode[row.regionCode] = value;
+            });
+            return {
+              title: metricLabels[selectedMetric] || selectedMetric || 'Рейтинг МФЦ по регионам',
+              years: [{
+                year: 2026,
+                regions: Object.keys(regionsByCode).sort().map(function (regionCode) {
+                  return { regionCode: regionCode, value: regionsByCode[regionCode] };
+                })
+              }]
+            };
+          }
+
+          data = buildStaticData();
+          window.__mapCsvState = {
+            metricColumns: metricColumns,
+            metricLabels: metricLabels,
+            getSelectedMetric: function () { return selectedMetric; },
+            setSelectedMetric: function (column) {
+              if (metricColumns.includes(column)) selectedMetric = column;
+            },
+            buildData: buildStaticData
           };
         }
         if (isStaticMode && !data.title) {
@@ -254,7 +280,7 @@
           return;
         }
 
-        const mapTitle = (typeof data.title === 'string' && data.title.trim())
+        let mapTitle = (typeof data.title === 'string' && data.title.trim())
           ? data.title.trim()
           : 'Интерактивная карта России';
 
@@ -272,11 +298,11 @@
         }
 
         function getQuantiles(values) {
-          const sorted = values.slice().sort((a, b) => a - b);
-          if (sorted.length === 0) return [0,0,0,0,0,0,0,0];
-          const getQ = (p) => {
-            const i = Math.ceil((sorted.length * p) / 100) - 1;
-            return sorted[Math.max(0, Math.min(i, sorted.length - 1))];
+          const sorted = values.slice().sort(function (a, b) { return a - b; });
+          if (sorted.length === 0) return [0, 0, 0, 0, 0, 0, 0, 0];
+          const getQ = function (percentile) {
+            const index = Math.ceil((sorted.length * percentile) / 100) - 1;
+            return sorted[Math.max(0, Math.min(index, sorted.length - 1))];
           };
           return [getQ(12.5), getQ(25), getQ(37.5), getQ(50), getQ(62.5), getQ(75), getQ(87.5), getQ(100)];
         }
@@ -480,6 +506,18 @@
                   '<a class="download-button" href="' + (isStaticMode ? './mfts_clean.csv' : base + '/downloads/mfts_clean.csv') + '" download="mfts_clean.csv">Скачать mfts_clean</a>' +
                   '<a class="download-button" href="' + (isStaticMode ? './ratings_df.csv' : base + '/downloads/ratings_df.csv') + '" download="ratings_df.csv">Скачать ratings_df</a>' +
                 '</div>' +
+                (isStaticMode && window.__mapCsvState.metricColumns.length > 1
+                  ? '<label class="sort-control">Показатель: <select id="metric-column">' +
+                    window.__mapCsvState.metricColumns.map(function (column) {
+                      return '<option value="' + escapeHtml(column) + '"' +
+                        (column === window.__mapCsvState.getSelectedMetric() ? ' selected' : '') + '>' +
+                        escapeHtml(window.__mapCsvState.metricLabels[column] || column) + '</option>';
+                    }).join('') +
+                    '</select></label>'
+                  : '') +
+                (!embedMode
+                  ? '<button type="button" class="download-button" id="copy-embed-code">Скопировать код вставки</button>'
+                  : '') +
               '</div>';
 
           let footerText = 'Перечислено ' + yearData.regions.length + ' субъектов · ' + yearValue;
@@ -518,6 +556,30 @@
               districtSort = event.target.value;
               render();
             };
+            const metricSelect = document.getElementById('metric-column');
+            if (metricSelect) {
+              metricSelect.onchange = function (event) {
+                window.__mapCsvState.setSelectedMetric(event.target.value);
+                data = window.__mapCsvState.buildData();
+                mapTitle = data.title;
+                currentYearIndex = 0;
+                render();
+              };
+            }
+            const embedButton = document.getElementById('copy-embed-code');
+            if (embedButton) {
+              embedButton.onclick = function () {
+                const embedUrl = new URL(window.location.href);
+                embedUrl.searchParams.set('embed', '1');
+                const embedCode = '<iframe src="' + embedUrl.toString() + '" title="Тепловая карта МФЦ" style="width:100%;height:900px;border:0" loading="lazy"></iframe>';
+                navigator.clipboard.writeText(embedCode).then(function () {
+                  embedButton.textContent = 'Код скопирован';
+                  setTimeout(function () { embedButton.textContent = 'Скопировать код вставки'; }, 2000);
+                }).catch(function () {
+                  window.prompt('Скопируйте код вставки:', embedCode);
+                });
+              };
+            }
           }
 
           const svg = root.querySelector('.map-wrap svg');
