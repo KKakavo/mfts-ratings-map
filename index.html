@@ -357,6 +357,12 @@
         let groupByDistrict = false;
         let districtSort = 'name';
 
+        function compareRegionRows(a, b) {
+          if (districtSort === 'rating-desc') return b.value - a.value || a.name.localeCompare(b.name, 'ru');
+          if (districtSort === 'rating-asc') return a.value - b.value || a.name.localeCompare(b.name, 'ru');
+          return a.name.localeCompare(b.name, 'ru');
+        }
+
         function buildRegionLegendHtml(yearData, restAggregateValue) {
           const rows = yearData.regions.map(function (r) {
             const name = (regions[r.regionCode] && regions[r.regionCode].title)
@@ -377,7 +383,7 @@
             const districtRows = Object.keys(districts).map(function (district) {
               const districtRows = districts[district];
               const average = districtRows.reduce(function (sum, row) { return sum + row.value; }, 0) / districtRows.length;
-              districtRows.sort(function (a, b) { return a.name.localeCompare(b.name, 'ru'); });
+              districtRows.sort(compareRegionRows);
               return { name: district, average: average, rows: districtRows };
             });
             districtRows.sort(function (a, b) {
@@ -395,7 +401,7 @@
                 }).join('');
             }).join('');
           } else {
-            rows.sort(function (a, b) { return a.name.localeCompare(b.name, 'ru'); });
+            rows.sort(compareRegionRows);
             inner = rows.map(function (row) {
               return '<div class="region-legend-row" role="listitem"><span class="region-legend-name">' + escapeHtml(row.name) + '</span>' +
                 '<span class="region-legend-sep"> — </span>' +
@@ -500,7 +506,7 @@
                 '</div>' +
                 '<div class="sort-controls">' +
                   '<label class="sort-control"><input type="checkbox" id="group-by-district"' + (groupByDistrict ? ' checked' : '') + '> Группировать по федеральным округам</label>' +
-                  '<label class="sort-control">Порядок округов: <select id="district-sort">' +
+                  '<label class="sort-control">Порядок сортировки: <select id="district-sort">' +
                     '<option value="name"' + (districtSort === 'name' ? ' selected' : '') + '>по алфавиту</option>' +
                     '<option value="rating-desc"' + (districtSort === 'rating-desc' ? ' selected' : '') + '>по рейтингу: убывание</option>' +
                     '<option value="rating-asc"' + (districtSort === 'rating-asc' ? ' selected' : '') + '>по рейтингу: возрастание</option>' +
