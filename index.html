@@ -504,14 +504,6 @@
                   '<span class="year-value" id="year-value">' + yearValue + '</span>' +
                   '<button type="button" id="btn-next" aria-label="Следующий год">›</button>' +
                 '</div>' +
-                '<div class="sort-controls">' +
-                  '<label class="sort-control"><input type="checkbox" id="group-by-district"' + (groupByDistrict ? ' checked' : '') + '> Группировать по федеральным округам</label>' +
-                  '<label class="sort-control">Порядок сортировки: <select id="district-sort">' +
-                    '<option value="name"' + (districtSort === 'name' ? ' selected' : '') + '>по алфавиту</option>' +
-                    '<option value="rating-desc"' + (districtSort === 'rating-desc' ? ' selected' : '') + '>по рейтингу: убывание</option>' +
-                    '<option value="rating-asc"' + (districtSort === 'rating-asc' ? ' selected' : '') + '>по рейтингу: возрастание</option>' +
-                  '</select></label>' +
-                '</div>' +
                 '<div class="download-controls">' +
                   '<a class="download-button" href="' + (isStaticMode ? './mfts_clean.csv' : base + '/downloads/mfts_clean.csv') + '" download="mfts_clean.csv">Скачать mfts_clean</a>' +
                   '<a class="download-button" href="' + (isStaticMode ? './ratings_df.csv' : base + '/downloads/ratings_df.csv') + '" download="ratings_df.csv">Скачать ratings_df</a>' +
@@ -545,6 +537,14 @@
                 '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600" class="w-full h-auto" aria-hidden="false">' +
                 pathsHtml + '</svg>' +
               '</div>' +
+            '</div>' +
+            '<div class="sort-controls" style="margin-top:16px">' +
+              '<label class="sort-control"><input type="checkbox" id="group-by-district"' + (groupByDistrict ? ' checked' : '') + '> Группировать по федеральным округам</label>' +
+              '<label class="sort-control">Порядок сортировки: <select id="district-sort">' +
+                '<option value="name"' + (districtSort === 'name' ? ' selected' : '') + '>по алфавиту</option>' +
+                '<option value="rating-desc"' + (districtSort === 'rating-desc' ? ' selected' : '') + '>по рейтингу: убывание</option>' +
+                '<option value="rating-asc"' + (districtSort === 'rating-asc' ? ' selected' : '') + '>по рейтингу: возрастание</option>' +
+              '</select></label>' +
             '</div>' +
             buildRegionLegendHtml(yearData, restAgg) +
             '<p class="map-footer-note">' + escapeHtml(footerText) + '</p>';
