@@ -247,40 +247,14 @@
               return String(row[categoryColumn] || '').trim() || 'Не указано';
             }))).sort(function (a, b) { return a.localeCompare(b, 'ru'); })
             : [];
-          if (categoryColumn) metricColumns.push(categoryColumn);
           const metricLabels = {
             'Анализ отзывов': 'Анализ отзывов',
             'Со сглаживанием': 'Со сглаживанием',
-            'Комплексный рейтинг (население)': 'Комплексный рейтинг (население)',
-            'АИС МФЦ': 'АИС МФЦ · категории'
+            'Комплексный рейтинг (население)': 'Комплексный рейтинг (население)'
           };
-          let selectedMetric = metricColumns.find(function (column) { return column !== categoryColumn; }) || metricColumns[0];
-          const categoryIndexes = {};
-          const categoryColors = {};
-          categoryValues.forEach(function (category, index) {
-            categoryIndexes[category] = index;
-            categoryColors[category] = 'hsl(' + Math.round(index * 360 / Math.max(categoryValues.length, 1)) + ', 64%, 48%)';
-          });
+          let selectedMetric = metricColumns[0];
 
           function buildStaticData() {
-            if (selectedMetric === categoryColumn) {
-              const categoryByCode = {};
-              csvRows.forEach(function (row) {
-                if (row.regionCode) {
-                  categoryByCode[row.regionCode] = String(row[categoryColumn] || '').trim() || 'Не указано';
-                }
-              });
-              return {
-                title: 'АИС МФЦ по регионам',
-                years: [{
-                  year: 2026,
-                  regions: Object.keys(categoryByCode).sort().map(function (regionCode) {
-                    const category = categoryByCode[regionCode];
-                    return { regionCode: regionCode, value: categoryIndexes[category], category: category };
-                  })
-                }]
-              };
-            }
             const regionsByCode = {};
             csvRows.forEach(function (row) {
               const value = parseCsvNumber(row[selectedMetric]);
@@ -303,9 +277,11 @@
             metricLabels: metricLabels,
             categoryColumn: categoryColumn,
             categoryValues: categoryValues,
-            categoryColors: categoryColors,
+            getCategoryForCode: function (code) {
+              const row = csvRows.find(function (item) { return item.regionCode === code; });
+              return row ? (String(row[categoryColumn] || '').trim() || 'Не указано') : 'Не указано';
+            },
             getSelectedMetric: function () { return selectedMetric; },
-            isCategorySelected: function () { return selectedMetric === categoryColumn; },
             setSelectedMetric: function (column) {
               if (metricColumns.includes(column)) selectedMetric = column;
             },
@@ -390,15 +366,10 @@
           }
         }
 
-        let groupByDistrict = false;
+        let groupMode = 'none';
         let districtSort = 'name';
 
-        function isCategoryMode() {
-          return isStaticMode && window.__mapCsvState && window.__mapCsvState.isCategorySelected();
-        }
-
         function compareRegionRows(a, b) {
-          if (isCategoryMode()) return a.name.localeCompare(b.name, 'ru');
           if (districtSort === 'rating-desc') return b.value - a.value || a.name.localeCompare(b.name, 'ru');
           if (districtSort === 'rating-asc') return a.value - b.value || a.name.localeCompare(b.name, 'ru');
           return a.name.localeCompare(b.name, 'ru');
@@ -412,38 +383,40 @@
             const district = (regions[r.regionCode] && regions[r.regionCode].federalDistrict)
               ? regions[r.regionCode].federalDistrict
               : 'Без округа';
+            const aisCategory = (isStaticMode && window.__mapCsvState.categoryColumn)
+              ? window.__mapCsvState.getCategoryForCode(r.regionCode)
+              : 'Не указано';
             return {
               name: name,
               value: r.value,
-              displayValue: isCategoryMode() ? r.category : formatNum(r.value),
-              district: district
+              displayValue: formatNum(r.value),
+              district: district,
+              aisCategory: aisCategory
             };
           });
           let inner;
-          if (groupByDistrict) {
-            const districts = {};
+          if (groupMode !== 'none') {
+            const groups = {};
             rows.forEach(function (row) {
-              if (!districts[row.district]) districts[row.district] = [];
-              districts[row.district].push(row);
+              const groupName = groupMode === 'district' ? row.district : row.aisCategory;
+              if (!groups[groupName]) groups[groupName] = [];
+              groups[groupName].push(row);
             });
-            const districtRows = Object.keys(districts).map(function (district) {
-              const districtRows = districts[district];
-              const average = isCategoryMode()
-                ? null
-                : districtRows.reduce(function (sum, row) { return sum + row.value; }, 0) / districtRows.length;
-              districtRows.sort(compareRegionRows);
-              return { name: district, average: average, rows: districtRows };
+            const groupRows = Object.keys(groups).map(function (groupName) {
+              const groupRegions = groups[groupName];
+              const average = groupRegions.reduce(function (sum, row) { return sum + row.value; }, 0) / groupRegions.length;
+              groupRegions.sort(compareRegionRows);
+              return { name: groupName, average: average, rows: groupRegions };
             });
-            districtRows.sort(function (a, b) {
-              if (isCategoryMode()) return a.name.localeCompare(b.name, 'ru');
+            groupRows.sort(function (a, b) {
               if (districtSort === 'rating-desc') return b.average - a.average || a.name.localeCompare(b.name, 'ru');
               if (districtSort === 'rating-asc') return a.average - b.average || a.name.localeCompare(b.name, 'ru');
               return a.name.localeCompare(b.name, 'ru');
             });
-            inner = districtRows.map(function (district) {
-              return '<div class="region-legend-row" role="listitem"><strong>' + escapeHtml(district.name) +
-                (isCategoryMode() ? '' : ' · среднее: ' + escapeHtml(formatNum(district.average))) + '</strong></div>' +
-                district.rows.map(function (row) {
+            inner = groupRows.map(function (group) {
+              return '<div class="region-legend-row" role="listitem"><strong>' + escapeHtml(group.name) +
+                ' · среднее: ' + escapeHtml(formatNum(group.average)) + '</strong></div>' +
+                group.rows.map(function (row) {
                   return '<div class="region-legend-row" role="listitem">&nbsp;&nbsp;<span class="region-legend-name">' + escapeHtml(row.name) + '</span>' +
                     '<span class="region-legend-sep"> — </span>' +
                     '<span class="region-legend-val">' + escapeHtml(row.displayValue) + '</span></div>';
@@ -476,15 +449,10 @@
           if (restAgg > 0) valueListForQuantiles.push(restAgg);
 
           const qu = getQuantiles(valueListForQuantiles);
-          const categoryMode = isCategoryMode();
           const yearValue = years[currentYearIndex];
           applyHeading(yearValue);
           const vMap = {};
-          const categoryByCode = {};
           yearData.regions.forEach(function (r) { vMap[r.regionCode] = r.value; });
-          yearData.regions.forEach(function (r) {
-            if (r.category) categoryByCode[r.regionCode] = r.category;
-          });
 
           const legendItems = [
             { color: '#1e3a8a', label: '≤ ' + formatNum(qu[0]), range: '0–12.5%' },
@@ -497,20 +465,12 @@
             { color: '#ef4444', label: '≤ ' + formatNum(qu[7]), range: '87.5–100%' }
           ];
 
-          let legendHtml = '<div class="legend"><h4>' + (categoryMode ? 'АИС МФЦ' : 'Шкала значений') + '</h4>';
-          if (categoryMode) {
-            const categoryColors = window.__mapCsvState.categoryColors;
-            legendHtml += window.__mapCsvState.categoryValues.map(function (category) {
-              return '<div class="legend-item"><div class="swatch" style="background:' + categoryColors[category] + '"></div>' +
-                '<div class="legend-label-line">' + escapeHtml(category) + '</div></div>';
-            }).join('');
-          } else {
-            legendHtml += legendItems.map(function (item) {
-              return '<div class="legend-item"><div class="swatch" style="background:' + item.color + '"></div><div>' +
-                '<div class="legend-label-line">' + escapeHtml(item.label) + '</div>' +
-                '<div class="legend-range-line">' + item.range + '</div></div></div>';
-            }).join('');
-          }
+          let legendHtml = '<div class="legend"><h4>Шкала значений</h4>';
+          legendHtml += legendItems.map(function (item) {
+            return '<div class="legend-item"><div class="swatch" style="background:' + item.color + '"></div><div>' +
+              '<div class="legend-label-line">' + escapeHtml(item.label) + '</div>' +
+              '<div class="legend-range-line">' + item.range + '</div></div></div>';
+          }).join('');
           if (restAgg > 0) {
             legendHtml += '<div class="legend-item legend-item--aggregate">' +
               '<svg class="legend-swatch-rest-svg" width="32" height="24" viewBox="0 0 1000 600" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' +
@@ -539,18 +499,14 @@
               return '<path class="poly-rest" d="' + escapeHtml(d) + '" fill="url(#pat-rest-stripes)" data-code="' + escapeHtml(code) + '" data-rest="1" stroke="#fff" stroke-width="1" stroke-linejoin="round" aria-label="' + escapeHtml(tip) + '"><title>' + escapeHtml(tip) + '</title></path>';
             }
             const value = vMap[code] ?? 0;
-            const category = categoryByCode[code];
-            const categoryColor = categoryMode && category
-              ? window.__mapCsvState.categoryColors[category]
-              : '#d1d5db';
-            const baseFill = categoryMode ? categoryColor : getColorForYear(value, qu);
-            const hoverFill = categoryMode
-              ? categoryColor.replace(', 48%)', ', 38%)')
-              : getHoverColorForYear(value, qu);
+            const baseFill = getColorForYear(value, qu);
+            const hoverFill = getHoverColorForYear(value, qu);
+            const aisCategory = (isStaticMode && window.__mapCsvState.categoryColumn)
+              ? window.__mapCsvState.getCategoryForCode(code)
+              : '';
             const regionTitle = (regions[code] && regions[code].title) ? regions[code].title : code;
-            const displayValue = categoryMode ? (category || 'Не указано') : formatNum(value);
-            const tip = regionTitle + ' (' + code + '): ' + displayValue + ' — ' + yearValue;
-            return '<path class="poly-listed" d="' + escapeHtml(d) + '" fill="' + baseFill + '" data-base-fill="' + baseFill + '" data-hover-fill="' + hoverFill + '" stroke="#fff" stroke-width="1" stroke-linejoin="round" data-code="' + escapeHtml(code) + '" data-rest="0" aria-label="' + escapeHtml(tip) + '"><title>' + escapeHtml(tip) + '</title></path>';
+            const tip = regionTitle + ' (' + code + '): ' + formatNum(value) + ' — ' + yearValue;
+            return '<path class="poly-listed" d="' + escapeHtml(d) + '" fill="' + baseFill + '" data-base-fill="' + baseFill + '" data-hover-fill="' + hoverFill + '" stroke="#fff" stroke-width="1" stroke-linejoin="round" data-code="' + escapeHtml(code) + '" data-ais-category="' + escapeHtml(aisCategory) + '" data-rest="0" aria-label="' + escapeHtml(tip) + '"><title>' + escapeHtml(tip) + '</title></path>';
           }).join('');
 
           const panelHtml =
@@ -560,6 +516,7 @@
                 '<div class="row"><span class="lbl">Код: </span><span id="panel-code"></span></div>' +
                 '<div class="row"><span class="lbl">Тип: </span><span id="panel-type"></span></div>' +
                 '<div class="row"><span class="lbl">Федеральный округ: </span><span id="panel-district"></span></div>' +
+                '<div class="row"><span class="lbl">АИС МФЦ: </span><span id="panel-ais"></span></div>' +
                 '<div class="row"><span class="lbl">Год: </span><span id="panel-year"></span></div>' +
                 '<div class="row"><span class="lbl">Значение: </span><span id="panel-value"></span></div>' +
               '</div>' +
@@ -608,7 +565,11 @@
               '</div>' +
             '</div>' +
             '<div class="sort-controls" style="margin-top:16px">' +
-              '<label class="sort-control"><input type="checkbox" id="group-by-district"' + (groupByDistrict ? ' checked' : '') + '> Группировать по федеральным округам</label>' +
+              '<label class="sort-control">Группировка: <select id="group-mode">' +
+                '<option value="none"' + (groupMode === 'none' ? ' selected' : '') + '>без группировки</option>' +
+                '<option value="district"' + (groupMode === 'district' ? ' selected' : '') + '>по федеральным округам</option>' +
+                '<option value="ais"' + (groupMode === 'ais' ? ' selected' : '') + '>по категориям АИС МФЦ</option>' +
+              '</select></label>' +
               '<label class="sort-control">Порядок сортировки: <select id="district-sort">' +
                 '<option value="name"' + (districtSort === 'name' ? ' selected' : '') + '>по алфавиту</option>' +
                 '<option value="rating-desc"' + (districtSort === 'rating-desc' ? ' selected' : '') + '>по рейтингу: убывание</option>' +
@@ -627,8 +588,8 @@
               currentYearIndex = currentYearIndex === years.length - 1 ? 0 : currentYearIndex + 1;
               render();
             };
-            document.getElementById('group-by-district').onchange = function (event) {
-              groupByDistrict = event.target.checked;
+            document.getElementById('group-mode').onchange = function (event) {
+              groupMode = event.target.value;
               render();
             };
             document.getElementById('district-sort').onchange = function (event) {
@@ -667,6 +628,7 @@
           const elCode = document.getElementById('panel-code');
           const elType = document.getElementById('panel-type');
           const elDistrict = document.getElementById('panel-district');
+          const elAis = document.getElementById('panel-ais');
           const elYear = document.getElementById('panel-year');
           const elValue = document.getElementById('panel-value');
 
@@ -681,8 +643,8 @@
               elType.textContent = 'агрегат';
               elDistrict.textContent = '—';
               elYear.textContent = String(yearValue);
-              elValue.textContent = categoryMode ? (value || 'Не указано') : formatNum(value);
-              elValue.className = categoryMode ? '' : (value > 10 ? 'val-hot' : (value > 0 ? 'val-warm' : 'val-cool'));
+              elValue.textContent = formatNum(value);
+              elValue.className = value > 10 ? 'val-hot' : (value > 0 ? 'val-warm' : 'val-cool');
               panel.classList.remove('is-hidden');
               return;
             }
@@ -694,6 +656,9 @@
             elCode.textContent = code;
             elType.textContent = typeStr;
             elDistrict.textContent = distStr;
+            elAis.textContent = (isStaticMode && window.__mapCsvState.categoryColumn)
+              ? window.__mapCsvState.getCategoryForCode(code)
+              : 'Не указано';
             elYear.textContent = String(yearValue);
             elValue.textContent = formatNum(value);
             elValue.className = value > 10 ? 'val-hot' : (value > 0 ? 'val-warm' : 'val-cool');
@@ -705,20 +670,43 @@
               const code = pathEl.getAttribute('data-code');
               const isRest = pathEl.getAttribute('data-rest') === '1';
               if (!isRest) {
-                const hf = pathEl.getAttribute('data-hover-fill');
-                if (hf) pathEl.setAttribute('fill', hf);
+                const category = pathEl.getAttribute('data-ais-category');
+                const highlightCategory = groupMode === 'ais' && category;
+                const relatedPaths = highlightCategory
+                  ? root.querySelectorAll('.map-wrap path.poly-listed[data-ais-category="' + CSS.escape(category) + '"]')
+                  : [pathEl];
+                relatedPaths.forEach(function (relatedPath) {
+                  relatedPath.setAttribute('fill', highlightCategory ? '#ffd54f' : relatedPath.getAttribute('data-hover-fill'));
+                  if (highlightCategory) {
+                    relatedPath.setAttribute('stroke', '#111827');
+                    relatedPath.setAttribute('stroke-width', '2.5');
+                  }
+                });
               }
-              const val = isRest ? restAgg : (categoryMode ? categoryByCode[code] : (vMap[code] ?? 0));
+              const val = isRest ? restAgg : (vMap[code] ?? 0);
               showRegionPanel(code, val, isRest);
             });
             pathEl.addEventListener('mouseleave', function (evt) {
               const isRest = pathEl.getAttribute('data-rest') === '1';
-              if (!isRest) {
-                const bf = pathEl.getAttribute('data-base-fill');
-                if (bf) pathEl.setAttribute('fill', bf);
-              }
               const rel = evt.relatedTarget;
-              if (rel && svg.contains(rel) && rel.closest && rel.closest('path[data-code]')) return;
+              const relatedPath = rel && svg.contains(rel) && rel.closest
+                ? rel.closest('path.poly-listed[data-code]')
+                : null;
+              const category = pathEl.getAttribute('data-ais-category');
+              if (!isRest && groupMode === 'ais' && relatedPath &&
+                  relatedPath.getAttribute('data-ais-category') === category) return;
+              if (!isRest) {
+                const highlightCategory = groupMode === 'ais' && category;
+                const relatedPaths = highlightCategory
+                  ? root.querySelectorAll('.map-wrap path.poly-listed[data-ais-category="' + CSS.escape(category) + '"]')
+                  : [pathEl];
+                relatedPaths.forEach(function (related) {
+                  related.setAttribute('fill', related.getAttribute('data-base-fill'));
+                  related.setAttribute('stroke', '#fff');
+                  related.setAttribute('stroke-width', '1');
+                });
+              }
+              if (relatedPath) return;
               hideRegionPanel();
             });
           });
